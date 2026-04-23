@@ -8,10 +8,14 @@ const GH_USERNAME = core.getInput("GH_USERNAME");
 const COMMIT_NAME = core.getInput("COMMIT_NAME");
 const COMMIT_EMAIL = core.getInput("COMMIT_EMAIL");
 const COMMIT_MSG = core.getInput("COMMIT_MSG");
-const MAX_LINES = core.getInput("MAX_LINES");
+const MAX_LINES = Number(core.getInput("MAX_LINES"));
 const TARGET_FILE = core.getInput("TARGET_FILE");
 const EMPTY_COMMIT_MSG = core.getInput("EMPTY_COMMIT_MSG");
-const FILTER_EVENTS = core.getInput("FILTER_EVENTS");
+const FILTER_EVENTS = core
+  .getInput("FILTER_EVENTS")
+  .split(",")
+  .map((event) => event.trim())
+  .filter(Boolean);
 
 /**
  * Returns the sentence case representation
@@ -21,6 +25,9 @@ const FILTER_EVENTS = core.getInput("FILTER_EVENTS");
  */
 
 const capitalize = (str) => str.slice(0, 1).toUpperCase() + str.slice(1);
+
+const normalizeEventType = (eventType) =>
+  eventType === "IssueEvent" ? "IssuesEvent" : eventType;
 
 /**
  * Returns a URL in markdown format for PR's and issues
@@ -201,21 +208,24 @@ const run = async () => {
 
     // Get the user's public events
     core.debug(`Getting activity for ${GH_USERNAME}`);
-    const events = await octokit.rest.activity.listPublicEventsForUser({
-      username: GH_USERNAME,
-      per_page: 100,
-    });
-    core.debug(
-      `Activity for ${GH_USERNAME}, ${events.data.length} events found.`,
+    const events = await octokit.paginate(
+      octokit.rest.activity.listPublicEventsForUser,
+      {
+        username: GH_USERNAME,
+        per_page: 100,
+      },
     );
+    core.debug(`Activity for ${GH_USERNAME}, ${events.length} events found.`);
 
-    const content = events.data
+    const content = events
       // Filter out any boring activity
-      .filter(
-        (event) =>
-          serializers.hasOwnProperty(event.type) &&
-          FILTER_EVENTS.includes(event.type),
-      )
+      .filter((event) => {
+        const eventType = normalizeEventType(event.type);
+        return (
+          serializers.hasOwnProperty(eventType) &&
+          FILTER_EVENTS.includes(eventType)
+        );
+      })
       // We only have five lines to work with
       .slice(0, MAX_LINES)
       // Call the serializer to construct a string

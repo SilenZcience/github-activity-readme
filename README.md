@@ -38,7 +38,7 @@ The above job runs every half an hour, you can change it as you wish based on th
 
 Please note that only those public events that belong to the following list show up:-
 
-- `IssueEvent`
+- `IssuesEvent`
 - `ReleaseEvent`
 - `IssueCommentEvent`
 - `PullRequestEvent`
@@ -58,7 +58,7 @@ Use the following `input params` to customize it for your use case:-
 | `EMPTY_COMMIT_MSG` | :memo: empty commit to keep workflow active after 60 days of no activity | Commit message used when there are no updates             |
 | `MAX_LINES`        | 5                                                                        | The maximum number of lines populated in your readme file |
 | `TARGET_FILE`      | README.md                                                                | The file to insert recent activity into                   |
-| `FILTER_EVENTS`    | IssueCommentEvent,IssuesEvent,PullRequestEvent,ReleaseEvent              | Display specific event type                               |
+| `FILTER_EVENTS`    | IssueCommentEvent,IssuesEvent,PullRequestEvent,ReleaseEvent              | Display specific event types                              |
 
 ```yml
 name: Update README
