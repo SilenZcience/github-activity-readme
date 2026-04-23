@@ -33087,6 +33087,15 @@ const run = async () => {
     core.debug(
       `Activity for ${GH_USERNAME}, ${events.data.length} events found.`,
     );
+    core.debug(
+      `Sample public events: ${events.data
+        .slice(0, 5)
+        .map(
+          (event) =>
+            `${event.type}@${event.repo?.name || "unknown"}:${event.created_at}`,
+        )
+        .join(" | ")}`,
+    );
 
     const historicalReleases = await fetchHistoricalReleases(octokit);
 
@@ -33094,11 +33103,16 @@ const run = async () => {
       // Filter out any boring activity
       .filter(
         (event) =>
+          event.type !== "ReleaseEvent" &&
           serializers.hasOwnProperty(event.type) &&
           FILTER_EVENTS.includes(event.type),
       );
 
-    const content = [...recentActivities, ...historicalReleases]
+    const historicalActivities = historicalReleases.filter((item) =>
+      FILTER_EVENTS.includes(item.type),
+    );
+
+    const content = [...recentActivities, ...historicalActivities]
       .sort((left, right) => toTimestamp(right.created_at) - toTimestamp(left.created_at))
       // We only have five lines to work with
       .slice(0, MAX_LINES)
@@ -33181,35 +33195,9 @@ const run = async () => {
       return;
     }
 
-    startIdx++;
-
-    // Recent GitHub Activity content between the comments
-    const readmeActivitySection = readmeContent.slice(startIdx, endIdx);
-    if (!readmeActivitySection.length) {
-      content.some((line, idx) => {
-        // User doesn't have 5 public events
-        if (!line) {
-          return true;
-        }
-        readmeContent.splice(startIdx + idx, 0, `${idx + 1}. ${line}`);
-      });
-      core.info(`Wrote to ${TARGET_FILE}`);
-    } else {
-      // It is likely that a newline is inserted after the <!--START_SECTION:activity--> comment (code formatter)
-      let count = 0;
-
-      readmeActivitySection.some((line, idx) => {
-        // User doesn't have 5 public events
-        if (!content[count]) {
-          return true;
-        }
-        if (line !== "") {
-          readmeContent[startIdx + idx] = `${count + 1}. ${content[count]}`;
-          count++;
-        }
-      });
-      core.info(`Updated ${TARGET_FILE} with the recent activity`);
-    }
+    const numberedContent = content.map((line, idx) => `${idx + 1}. ${line}`);
+    readmeContent.splice(startIdx + 1, endIdx - startIdx - 1, ...numberedContent);
+    core.info(`Updated ${TARGET_FILE} with the recent activity`);
 
     // Update README
     fs.writeFileSync(`./${TARGET_FILE}`, readmeContent.join("\n"));
