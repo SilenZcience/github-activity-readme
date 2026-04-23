@@ -36,6 +36,8 @@ jobs:
 
 The above job runs every half an hour, you can change it as you wish based on the [cron syntax](https://jasonet.co/posts/scheduled-actions/#the-cron-syntax).
 
+The action now also scans your owned repositories for published releases, so older releases can appear even when they are no longer in the public events feed. Recent issues and pull requests still come from GitHub's public activity feed.
+
 Please note that only those public events that belong to the following list show up:-
 
 - `IssuesEvent`
